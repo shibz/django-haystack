@@ -592,7 +592,7 @@ class SolrSearchQuery(BaseSearchQuery):
 
     def build_alt_parser_query(self, parser_name, query_string='', **kwargs):
         if query_string:
-            query_string = Clean(query_string).prepare(self)
+            kwargs['v'] = query_string
 
         kwarg_bits = []
 
@@ -602,7 +602,7 @@ class SolrSearchQuery(BaseSearchQuery):
             else:
                 kwarg_bits.append(u"%s=%s" % (key, kwargs[key]))
 
-        return u'_query_:"{!%s %s}%s"' % (parser_name, Clean(' '.join(kwarg_bits)), query_string)
+        return u"{!%s %s}" % (parser_name, ' '.join(kwarg_bits))
 
     def build_params(self, spelling_query=None, **kwargs):
         search_kwargs = {
