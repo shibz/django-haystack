@@ -8,7 +8,7 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management.base import LabelCommand
 from django.db import reset_queries
-from django.utils.encoding import smart_str
+from django.utils.encoding import smart_str, force_unicode
 
 from haystack import connections as haystack_connections
 from haystack.constants import DEFAULT_ALIAS
@@ -225,7 +225,7 @@ class Command(LabelCommand):
             total = qs.count()
 
             if self.verbosity >= 1:
-                print "Indexing %d %s." % (total, smart_str(model._meta.verbose_name_plural))
+                print u"Indexing %d %s" % (total, force_unicode(model._meta.verbose_name_plural))
 
             pks_seen = set([smart_str(pk) for pk in qs.values_list('pk', flat=True)])
             batch_size = self.batchsize or self.backend.batch_size
