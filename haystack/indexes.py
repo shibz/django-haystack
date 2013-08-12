@@ -6,6 +6,7 @@ from django.core.exceptions import ImproperlyConfigured
 from haystack import connections, connection_router
 from haystack.constants import ID, DJANGO_CT, DJANGO_ID, Indexable, DEFAULT_ALIAS
 from haystack.fields import *
+from haystack.manager import SearchIndexManager
 from haystack.utils import get_identifier, get_facet_field_name
 
 
@@ -54,6 +55,13 @@ class DeclarativeMetaclass(type):
                             shadow_facet_field = field.facet_class(facet_for=field_name)
                             shadow_facet_field.set_instance_name(shadow_facet_name)
                             attrs['fields'][shadow_facet_name] = shadow_facet_field
+
+        # Assigning default 'objects' query manager if it does not already exist
+        if not attrs.has_key('objects'):
+            try:
+                attrs['objects'] = SearchIndexManager(attrs['Meta'].index_label)
+            except (KeyError, AttributeError):
+                attrs['objects'] = SearchIndexManager(DEFAULT_ALIAS)
 
         return super(DeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
 
@@ -269,7 +277,7 @@ class SearchIndex(threading.local):
         backend = self._get_backend(using)
 
         if backend is not None:
-            backend.remove(instance)
+            backend.remove(instance, **kwargs)
 
     def clear(self, using=None):
         """

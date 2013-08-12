@@ -277,10 +277,18 @@ Example::
 ``facet``
 ~~~~~~~~~
 
-.. method:: SearchQuerySet.facet(self, field)
+.. method:: SearchQuerySet.facet(self, field, **options)
 
 Adds faceting to a query for the provided field. You provide the field (from one
-of the ``SearchIndex`` classes) you like to facet on.
+of the ``SearchIndex`` classes) you like to facet on. Any keyword options you
+provide will be passed along to the backend for that facet.
+
+Example::
+
+    # For SOLR (setting f.author.facet.*; see http://wiki.apache.org/solr/SimpleFacetParameters#Parameters)
+    SearchQuerySet().facet('author', mincount=1, limit=10)
+    # For ElasticSearch (see http://www.elasticsearch.org/guide/reference/api/search/facets/terms-facet.html)
+    SearchQuerySet().facet('author', size=10, order='term')
 
 In the search results you get back, facet counts will be populated in the
 ``SearchResult`` object. You can access them via the ``facet_counts`` method.
@@ -352,9 +360,40 @@ Spatial: Adds a distance-based search to the query.
 
 See the :ref:`ref-spatial` docs for more information.
 
+``stats``
+~~~~~~~~~
+
+.. method:: SearchQuerySet.stats(self, field):
+
+Adds stats to a query for the provided field. This is supported on
+Solr only. You provide the field (from one of the ``SearchIndex``
+classes) you would like stats on.
+
+In the search results you get back, stats will be populated in the
+``SearchResult`` object. You can access them via the `` stats_results`` method.
+
+Example::
+
+    # Get stats on the author field.
+    SearchQuerySet().filter(content='foo').stats('author')
+
+``stats_facet``
+~~~~~~~~~~~~~~~
+.. method:: SearchQuerySet.stats_facet(self, field,
+.. facet_fields=None):
+
+Adds stats facet for the given field and facet_fields represents the
+faceted fields. This is supported on Solr only.
+
+Example::
+
+    # Get stats on the author field, and stats on the author field
+    faceted by bookstore.
+    SearchQuerySet().filter(content='foo').stats_facet('author','bookstore')
+
+
 ``distance``
 ~~~~~~~~~~~~
-
 .. method:: SearchQuerySet.distance(self, field, point):
 
 Spatial: Denotes results must have distance measurements from the
@@ -623,6 +662,52 @@ Example::
     #     },
     #     'queries': {}
     # }
+
+``stats_results``
+~~~~~~~~~~~~~~~~~
+
+.. method:: SearchQuerySet.stats_results(self):
+ 
+Returns the stats results found by the query.
+
+ This will cause the query to
+execute and should generally be used when presenting the data (template-level).
+
+You receive back a dictionary with three keys: ``fields``, ``dates`` and
+``queries``. Each contains the facet counts for whatever facets you specified
+within your ``SearchQuerySet``.
+
+.. note::
+
+    The resulting dictionary may change before 1.0 release. It's fairly
+    backend-specific at the time of writing. Standardizing is waiting on
+    implementing other backends that support faceting and ensuring that the
+    results presented will meet their needs as well.
+
+Example::
+
+    # Count document hits for each author.
+    sqs = SearchQuerySet().filter(content='foo').stats('price')
+
+    sqs.stats_results()
+
+    # Gives the following response
+    # {
+    #    'stats_fields':{
+    #       'author:{
+    #            'min': 0.0, 
+    #            'max': 2199.0,  
+    #            'sum': 5251.2699999999995,
+    #            'count': 15,
+    #            'missing': 11,
+    #            'sumOfSquares': 6038619.160300001,
+    #            'mean': 350.08466666666664,
+    #            'stddev': 547.737557906113
+    #        }
+    #    }
+    #    
+    # }
+
 
 ``spelling_suggestion``
 ~~~~~~~~~~~~~~~~~~~~~~~
